@@ -67,6 +67,7 @@ struct DockPopover: View {
     @StateObject var expandedReviewRouter = ExpandedReviewRouter()
     @StateObject var hostPresentation = DockHostPresentation()
     @StateObject var commandPalettePresentation = DockActionPalettePresentation()
+    @State private var isShowingShortcutList = false
     @State private var presentationHostID = UUID()
     let model: DockModel
     @State var modelPresentationRevision = 0
@@ -311,7 +312,17 @@ struct DockPopover: View {
                     goBack: goBack,
                     goForward: goForward,
                     newChat: startNewConversation,
-                    stopGeneration: { model.stop() }
+                    stopGeneration: { model.stop() },
+                    closeSession: {
+                        if let panel = sessionPanes.activePanel, let sessionID = panel.selectedID {
+                            sessionPanes.closeTab(sessionID, in: panel.id)
+                        } else {
+                            startNewConversation()
+                        }
+                    },
+                    toggleSidebar: { isChatListCollapsed.toggle() },
+                    toggleInspector: toggleInspectorPanel,
+                    showShortcutList: { isShowingShortcutList = true }
                 )
             )
             .dockSheet(
@@ -331,6 +342,9 @@ struct DockPopover: View {
                     }
                     commandPalettePresentation.dismiss()
                 }
+            }
+            .dockSheet(isPresented: $isShowingShortcutList) {
+                HermShortcutList()
             }
             .environment(\.dockHostVisible, hostPresentation.isVisible)
             .environment(\.dockHostResizing, hostPresentation.isResizing)

@@ -18,7 +18,7 @@ struct HermCommandRegistryTests {
         #expect(menuIDs.count == commandIDs.count)
         #expect(Set(menuIDs) == Set(commandIDs))
         #expect(paletteIDs == commandIDs)
-        #expect(HermCommand.Menu.allCases.map(\.rawValue) == ["File", "View", "Go", "Session"])
+        #expect(HermCommand.Menu.allCases.map(\.rawValue) == ["File", "View", "Go", "Session", "Help"])
     }
 
     @Test @MainActor func handlersDispatchEachRegisteredAction() {
@@ -29,7 +29,11 @@ struct HermCommandRegistryTests {
             goBack: { performed.append(.back) },
             goForward: { performed.append(.forward) },
             newChat: { performed.append(.newChat) },
-            stopGeneration: { performed.append(.stopGeneration) }
+            stopGeneration: { performed.append(.stopGeneration) },
+            closeSession: { performed.append(.closeSession) },
+            toggleSidebar: { performed.append(.toggleSidebar) },
+            toggleInspector: { performed.append(.toggleInspector) },
+            showShortcutList: { performed.append(.showShortcutList) }
         )
 
         for command in HermCommand.all {
@@ -47,7 +51,11 @@ struct HermCommandRegistryTests {
             goBack: {},
             goForward: {},
             newChat: {},
-            stopGeneration: {}
+            stopGeneration: {},
+            closeSession: {},
+            toggleSidebar: {},
+            toggleInspector: {},
+            showShortcutList: {}
         )
 
         handlers.perform(.commandPalette)
@@ -74,7 +82,19 @@ struct HermCommandRegistryTests {
         #expect(presentation.pendingAction == nil)
     }
 
+    @Test func approvalCardKeysRequireFocusAndAnIdleRequest() {
+        #expect(ApprovalCardKeyAction.choice(for: .returnKey, isFocused: true, isPending: false) == ApprovalChoice.once)
+        #expect(ApprovalCardKeyAction.choice(for: .deleteKey, isFocused: true, isPending: false) == ApprovalChoice.deny)
+        #expect(ApprovalCardKeyAction.choice(for: .returnKey, isFocused: false, isPending: false) == nil)
+        #expect(ApprovalCardKeyAction.choice(for: .deleteKey, isFocused: false, isPending: false) == nil)
+        #expect(ApprovalCardKeyAction.choice(for: .returnKey, isFocused: true, isPending: true) == nil)
+        #expect(ApprovalCardKeyAction.choice(for: .deleteKey, isFocused: true, isPending: true) == nil)
+    }
+
     @Test func paletteLabelsUseTheRegisteredKeyEquivalents() {
-        #expect(HermCommandRegistry.paletteCommands.map(\.keycap) == ["⌘,", "⌘K", "⌘[", "⌘]", "⌘N", "⌘."])
+        #expect(
+            HermCommandRegistry.paletteCommands.map(\.keycap) == [
+                "⌘,", "⌘K", "⌘[", "⌘]", "⌘N", "⌘.", "⌘W", "⌃⌘S", "⌥⌘I", "⌘/",
+            ])
     }
 }

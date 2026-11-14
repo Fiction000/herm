@@ -8,6 +8,10 @@ struct HermCommand: Identifiable {
         case forward
         case newChat
         case stopGeneration
+        case closeSession
+        case toggleSidebar
+        case toggleInspector
+        case showShortcutList
     }
 
     enum Scope: Hashable {
@@ -20,6 +24,7 @@ struct HermCommand: Identifiable {
         case view = "View"
         case go = "Go"
         case session = "Session"
+        case help = "Help"
 
         var id: String { rawValue }
     }
@@ -42,6 +47,18 @@ struct HermCommand: Identifiable {
         HermCommand(
             id: .stopGeneration, title: "Stop generation", key: ".", modifiers: .command, scope: .workspace,
             menu: .session),
+        HermCommand(
+            id: .closeSession, title: "Close current session", key: "w", modifiers: .command, scope: .workspace,
+            menu: .session),
+        HermCommand(
+            id: .toggleSidebar, title: "Toggle sidebar", key: "s", modifiers: [.control, .command],
+            scope: .workspace, menu: .view),
+        HermCommand(
+            id: .toggleInspector, title: "Toggle inspector", key: "i", modifiers: [.option, .command],
+            scope: .workspace, menu: .view),
+        HermCommand(
+            id: .showShortcutList, title: "Keyboard shortcuts", key: "/", modifiers: .command,
+            scope: .workspace, menu: .help),
     ]
 
     var shortcut: KeyboardShortcut? { key.map { KeyboardShortcut($0, modifiers: modifiers) } }
@@ -73,6 +90,10 @@ struct HermCommandHandlers {
     let goForward: () -> Void
     let newChat: () -> Void
     let stopGeneration: () -> Void
+    let closeSession: () -> Void
+    let toggleSidebar: () -> Void
+    let toggleInspector: () -> Void
+    let showShortcutList: () -> Void
 
     func perform(_ command: HermCommand.ID) {
         switch command {
@@ -82,6 +103,10 @@ struct HermCommandHandlers {
         case .forward: goForward()
         case .newChat: newChat()
         case .stopGeneration: stopGeneration()
+        case .closeSession: closeSession()
+        case .toggleSidebar: toggleSidebar()
+        case .toggleInspector: toggleInspector()
+        case .showShortcutList: showShortcutList()
         }
     }
 }
@@ -129,6 +154,9 @@ struct HermCommandMenus: Commands {
         CommandMenu(HermCommand.Menu.session.rawValue) {
             commandButtons(in: .session)
         }
+        CommandMenu(HermCommand.Menu.help.rawValue) {
+            commandButtons(in: .help)
+        }
     }
 
     @ViewBuilder
@@ -153,11 +181,43 @@ struct HermCommandMenus: Commands {
 extension HermCommand {
     var keycap: String {
         var symbols = ""
+        if modifiers.contains(.control) { symbols += "⌃" }
+        if modifiers.contains(.option) { symbols += "⌥" }
         if modifiers.contains(.command) { symbols += "⌘" }
         if modifiers.contains(.shift) { symbols += "⇧" }
-        if modifiers.contains(.option) { symbols += "⌥" }
-        if modifiers.contains(.control) { symbols += "⌃" }
         let keyText = key.map { $0 == "," ? "," : String($0.character).uppercased() } ?? ""
         return symbols + keyText
+    }
+}
+
+struct HermShortcutList: View {
+    var body: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            Text("Keyboard shortcuts")
+                .dockFont(.pageTitle, weight: .semibold)
+                .foregroundStyle(Color.dockPrimaryText)
+            ScrollView {
+                VStack(spacing: 0) {
+                    ForEach(HermCommand.all) { command in
+                        HStack {
+                            Text(command.title)
+                                .dockFont(.body)
+                                .foregroundStyle(Color.dockPrimaryText)
+                            Spacer()
+                            Text(command.keycap)
+                                .dockFont(.body, weight: .semibold, design: .monospaced)
+                                .foregroundStyle(Color.dockSecondaryText)
+                                .dockPill(compact: true)
+                        }
+                        .dockPadding(.vertical, 8)
+                        if command.id != HermCommand.all.last?.id {
+                            Divider().overlay(Color.dockBorder)
+                        }
+                    }
+                }
+            }
+        }
+        .dockPadding(20)
+        .frame(width: 440, height: 520)
     }
 }
