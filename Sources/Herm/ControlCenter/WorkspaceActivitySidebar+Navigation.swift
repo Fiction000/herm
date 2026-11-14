@@ -468,7 +468,6 @@ extension WorkspaceActivitySidebar {
             }
             .buttonStyle(.dockHover)
             .help("Command palette")
-            .keyboardShortcut("k", modifiers: [.command])
             Button(action: onClose) {
                 DockIcon(.caretLeft)
                     .dockFont(.body, weight: .semibold)

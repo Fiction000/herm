@@ -77,6 +77,7 @@ struct DockPopover: View {
     var availableWorkspaceWidth: () -> CGFloat = { .greatestFiniteMagnitude }
     var onWorkspaceWidthChange: (CGFloat) -> CGFloat = { $0 }
     var onClose: () -> Void = {}
+    var onOpenSettings: () -> Void = {}
     var onFullscreenToggle: () -> Void = {}
     /// Floating panel: open the docked window. Docked window: return to floating.
     var onOpenWindow: (() -> Void)?
@@ -84,6 +85,7 @@ struct DockPopover: View {
     var usesWindowChrome = false
     @State var isShowingMessageSearch = false
     @State var isShowingMessagePins = false
+    @State var isShowingHermCommandPalette = false
     @State var pinnedMessageJumpID: UUID?
     @State var sessionRailReplyRequest = 0
     @State var isSessionIdentityHovering = false
@@ -301,6 +303,24 @@ struct DockPopover: View {
             }
             .onReceive(controlCenter.workspacePresentationChanges) { _ in controlPresentationRevision &+= 1 }
             .environment(\.dockWorkspaceScale, CGFloat(DockWorkspaceScale.supportedTextSize(textSize)))
+            .focusedValue(
+                \.hermCommandHandlers,
+                HermCommandHandlers(
+                    openSettings: onOpenSettings,
+                    openCommandPalette: { isShowingHermCommandPalette = true },
+                    goBack: goBack,
+                    goForward: goForward
+                )
+            )
+            .dockSheet(isPresented: $isShowingHermCommandPalette) {
+                HermCommandPalette(
+                    handlers: HermCommandHandlers(
+                        openSettings: onOpenSettings,
+                        openCommandPalette: { isShowingHermCommandPalette = false },
+                        goBack: goBack,
+                        goForward: goForward
+                    ))
+            }
             .environment(\.dockHostVisible, hostPresentation.isVisible)
             .environment(\.dockHostResizing, hostPresentation.isResizing)
             .background { DockHostPresentationObserver(presentation: hostPresentation).frame(width: 0, height: 0) }

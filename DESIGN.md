@@ -2708,6 +2708,8 @@ The first message replaces the welcome with the transcript while the same compos
 glides from its centered position to the bottom, decelerating into place. The welcome
 fades in place rather than following it. Reduce Motion and motion-free skins skip motion.
 
+- **⌘K** opens a workspace-wide command palette from the floating panel or companion window, whether or not the activity sidebar is mounted. Its command rows use registry titles and key-equivalent labels. The File, View, Session, and Go menus use that same registry; workspace navigation and palette shortcuts have one owner, while text-editor, browser, finder, and composer shortcuts remain focused in their respective controls.
+
 The session title uses the available header width before the flexible spacer;
 toolbar actions remain visible and the title truncates when space is limited.
 
