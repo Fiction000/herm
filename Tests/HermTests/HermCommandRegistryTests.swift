@@ -18,7 +18,7 @@ struct HermCommandRegistryTests {
         #expect(menuIDs.count == commandIDs.count)
         #expect(Set(menuIDs) == Set(commandIDs))
         #expect(paletteIDs == commandIDs)
-        #expect(HermCommand.Menu.allCases.map(\.rawValue) == ["File", "View", "Session", "Go"])
+        #expect(HermCommand.Menu.allCases.map(\.rawValue) == ["File", "View", "Go"])
     }
 
     @Test @MainActor func handlersDispatchEachRegisteredAction() {

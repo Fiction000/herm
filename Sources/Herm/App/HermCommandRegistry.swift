@@ -16,7 +16,6 @@ struct HermCommand: Identifiable {
     enum Menu: String, CaseIterable, Identifiable {
         case file = "File"
         case view = "View"
-        case session = "Session"
         case go = "Go"
 
         var id: String { rawValue }
@@ -94,9 +93,6 @@ struct HermCommandMenus: Commands {
         }
         CommandMenu(HermCommand.Menu.view.rawValue) {
             commandButtons(in: .view)
-        }
-        CommandMenu(HermCommand.Menu.session.rawValue) {
-            commandButtons(in: .session)
         }
         CommandMenu(HermCommand.Menu.go.rawValue) {
             commandButtons(in: .go)
