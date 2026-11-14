@@ -37,6 +37,39 @@ struct HermCommandRegistryTests {
         #expect(performed == HermCommand.ID.allCases)
     }
 
+    @Test @MainActor func commandPaletteHandlerRequestsSharedPalettePresentation() {
+        let presentation = DockActionPalettePresentation()
+        let handlers = HermCommandHandlers(
+            openSettings: {},
+            openCommandPalette: { presentation.present() },
+            goBack: {},
+            goForward: {}
+        )
+
+        handlers.perform(.commandPalette)
+
+        #expect(presentation.isPresented)
+    }
+
+    @Test @MainActor func sidebarPaletteButtonUsesSharedPresentationRequest() {
+        let presentation = DockActionPalettePresentation()
+
+        presentation.present()
+
+        #expect(presentation.isPresented)
+    }
+
+    @Test @MainActor func deferredPaletteActionRunsWhenSidebarHandlerMounts() {
+        let presentation = DockActionPalettePresentation()
+        var performed: [DockAction] = []
+        presentation.pendingAction = .restartDock
+
+        presentation.installActionHandler { performed.append($0) }
+
+        #expect(performed == [.restartDock])
+        #expect(presentation.pendingAction == nil)
+    }
+
     @Test func paletteLabelsUseTheRegisteredKeyEquivalents() {
         #expect(HermCommandRegistry.paletteCommands.map(\.keycap) == ["⌘,", "⌘K", "⌘[", "⌘]"])
     }

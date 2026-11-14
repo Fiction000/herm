@@ -459,7 +459,7 @@ extension WorkspaceActivitySidebar {
         HStack {
             Spacer()
             Button {
-                isShowingCommandPalette = true
+                commandPalettePresentation.present()
             } label: {
                 DockIcon(.command)
                     .dockFont(.body, weight: .semibold)
