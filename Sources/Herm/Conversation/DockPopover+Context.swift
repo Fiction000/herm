@@ -145,16 +145,6 @@ extension DockPopover {
             canGoBack: navHistory.canGoBack, canGoForward: navHistory.canGoForward, back: goBack, forward: goForward)
     }
 
-    /// One pair of window-wide shortcuts, so the visible buttons never compete for them.
-    var historyShortcuts: some View {
-        Group {
-            Button("Back", action: goBack).keyboardShortcut("[", modifiers: .command).disabled(!navHistory.canGoBack)
-            Button("Forward", action: goForward).keyboardShortcut("]", modifiers: .command)
-                .disabled(!navHistory.canGoForward)
-        }
-        .frame(width: 0, height: 0).opacity(0).accessibilityHidden(true)
-    }
-
     func goBack() { if let destination = navHistory.back() { navigate(to: destination) } }
     func goForward() { if let destination = navHistory.forward() { navigate(to: destination) } }
 
