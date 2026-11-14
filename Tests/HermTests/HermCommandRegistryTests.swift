@@ -21,6 +21,22 @@ struct HermCommandRegistryTests {
         #expect(HermCommand.Menu.allCases.map(\.rawValue) == ["File", "View", "Session", "Go"])
     }
 
+    @Test @MainActor func handlersDispatchEachRegisteredAction() {
+        var performed: [HermCommand.ID] = []
+        let handlers = HermCommandHandlers(
+            openSettings: { performed.append(.settings) },
+            openCommandPalette: { performed.append(.commandPalette) },
+            goBack: { performed.append(.back) },
+            goForward: { performed.append(.forward) }
+        )
+
+        for command in HermCommand.all {
+            handlers.perform(command.id)
+        }
+
+        #expect(performed == HermCommand.ID.allCases)
+    }
+
     @Test func paletteLabelsUseTheRegisteredKeyEquivalents() {
         #expect(HermCommandRegistry.paletteCommands.map(\.keycap) == ["⌘,", "⌘K", "⌘[", "⌘]"])
     }
