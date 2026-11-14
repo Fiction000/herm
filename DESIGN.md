@@ -2708,7 +2708,7 @@ The first message replaces the welcome with the transcript while the same compos
 glides from its centered position to the bottom, decelerating into place. The welcome
 fades in place rather than following it. Reduce Motion and motion-free skins skip motion.
 
-- **⌘K** opens a workspace-wide command palette from the floating panel or companion window, whether or not the activity sidebar is mounted. Its command rows use registry titles and key-equivalent labels. The File, View, Session, and Go menus use that same registry; workspace navigation and palette shortcuts have one owner, while text-editor, browser, finder, and composer shortcuts remain focused in their respective controls.
+- **⌘K** opens the existing Command Center action palette from the floating panel or companion window, whether or not the activity sidebar is mounted. The sidebar button uses the same presentation state. When the sidebar is mounted, actions use its existing handler; tab navigation and Restart Herm are deferred until it mounts when opened from another workspace surface, preserving its selection refresh and restart confirmation behavior. File, View, and Go menus use the command registry for Settings, palette, Back, and Forward shortcuts.
 
 The session title uses the available header width before the flexible spacer;
 toolbar actions remain visible and the title truncates when space is limited.

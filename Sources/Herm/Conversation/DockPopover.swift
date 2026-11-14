@@ -66,6 +66,7 @@ struct DockPopover: View {
     @AppStorage(DockWorkspaceScale.preferenceKey) private var textSize = DockWorkspaceScale.defaultTextSize
     @StateObject var expandedReviewRouter = ExpandedReviewRouter()
     @StateObject var hostPresentation = DockHostPresentation()
+    @StateObject var commandPalettePresentation = DockActionPalettePresentation()
     @State private var presentationHostID = UUID()
     let model: DockModel
     @State var modelPresentationRevision = 0
@@ -85,7 +86,6 @@ struct DockPopover: View {
     var usesWindowChrome = false
     @State var isShowingMessageSearch = false
     @State var isShowingMessagePins = false
-    @State var isShowingHermCommandPalette = false
     @State var pinnedMessageJumpID: UUID?
     @State var sessionRailReplyRequest = 0
     @State var isSessionIdentityHovering = false
@@ -307,19 +307,28 @@ struct DockPopover: View {
                 \.hermCommandHandlers,
                 HermCommandHandlers(
                     openSettings: onOpenSettings,
-                    openCommandPalette: { isShowingHermCommandPalette = true },
+                    openCommandPalette: { commandPalettePresentation.present() },
                     goBack: goBack,
                     goForward: goForward
                 )
             )
-            .dockSheet(isPresented: $isShowingHermCommandPalette) {
-                HermCommandPalette(
-                    handlers: HermCommandHandlers(
-                        openSettings: onOpenSettings,
-                        openCommandPalette: { isShowingHermCommandPalette = false },
-                        goBack: goBack,
-                        goForward: goForward
-                    ))
+            .dockSheet(
+                isPresented: Binding(
+                    get: { commandPalettePresentation.isPresented },
+                    set: { if !$0 { commandPalettePresentation.dismiss() } }
+                )
+            ) {
+                DockActionPalette(
+                    repositoryAvailable: activeSessionRepositoryPath != nil,
+                    isWorking: model.status == .working
+                ) { command in
+                    if let actionHandler = commandPalettePresentation.actionHandler {
+                        actionHandler(command)
+                    } else {
+                        runDockActionWithoutSidebar(command)
+                    }
+                    commandPalettePresentation.dismiss()
+                }
             }
             .environment(\.dockHostVisible, hostPresentation.isVisible)
             .environment(\.dockHostResizing, hostPresentation.isResizing)

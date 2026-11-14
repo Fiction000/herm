@@ -50,7 +50,7 @@ struct WorkspaceActivitySidebar: View {
     var showsModePicker = true
     @State var selectedMode: ControlTab = .kanban
     @StateObject var integrationsWorkspace: IntegrationsWorkspaceState
-    @State var isShowingCommandPalette = false
+    @ObservedObject var commandPalettePresentation: DockActionPalettePresentation
     @State var searchQuery = ""
     @State var selectedModelID = ""
     @State var selectedAgentID: String?
@@ -159,6 +159,7 @@ struct WorkspaceActivitySidebar: View {
 
     init(
         model: DockModel,
+        commandPalettePresentation: DockActionPalettePresentation = DockActionPalettePresentation(),
         botMode: BotModeModel,
         store: WorkspaceStore,
         control: ControlCenterModel,
@@ -180,6 +181,7 @@ struct WorkspaceActivitySidebar: View {
             wrappedValue: integrationsWorkspace
                 ?? IntegrationsWorkspaceState(client: model.controlRPCClient, store: store))
         self.model = model
+        self.commandPalettePresentation = commandPalettePresentation
         self.botMode = botMode
         self.store = store
         self.control = control
@@ -234,13 +236,8 @@ struct WorkspaceActivitySidebar: View {
                     .allowsHitTesting(false)
                 }
             }
-            .dockSheet(isPresented: $isShowingCommandPalette) {
-                DockActionPalette(repositoryAvailable: activeRepositoryPath != nil, isWorking: model.status == .working)
-                { command in
-                    run(command)
-                    isShowingCommandPalette = false
-                }
-            }
+            .onAppear { commandPalettePresentation.installActionHandler(run) }
+            .onDisappear { commandPalettePresentation.actionHandler = nil }
             .dockSheet(item: $kanbanMutationRequest) { request in
                 KanbanMutationEditor(
                     request: request, assignees: control.kanbanAssignees,

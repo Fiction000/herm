@@ -41,6 +41,24 @@ struct HermCommand: Identifiable {
 }
 
 @MainActor
+final class DockActionPalettePresentation: ObservableObject {
+    @Published private(set) var isPresented = false
+    var actionHandler: ((DockAction) -> Void)?
+    var pendingAction: DockAction?
+
+    func present() { isPresented = true }
+
+    func dismiss() { isPresented = false }
+
+    func installActionHandler(_ handler: @escaping (DockAction) -> Void) {
+        actionHandler = handler
+        guard let pendingAction else { return }
+        self.pendingAction = nil
+        handler(pendingAction)
+    }
+}
+
+@MainActor
 struct HermCommandHandlers {
     let openSettings: () -> Void
     let openCommandPalette: () -> Void
@@ -127,34 +145,5 @@ extension HermCommand {
         if modifiers.contains(.control) { symbols += "⌃" }
         let keyText = key.map { $0 == "," ? "," : String($0.character).uppercased() } ?? ""
         return symbols + keyText
-    }
-}
-
-struct HermCommandPalette: View {
-    let handlers: HermCommandHandlers
-    @Environment(\.dismiss) private var dismiss
-
-    var body: some View {
-        DockModal(title: "Command palette", subtitle: "Workspace commands", width: 420, contentPadding: 16) {
-            VStack(spacing: 4) {
-                ForEach(HermCommandRegistry.paletteCommands) { command in
-                    Button {
-                        handlers.perform(command.id)
-                        dismiss()
-                    } label: {
-                        HStack {
-                            Text(command.title).dockFont(.navigation, weight: .medium)
-                            Spacer()
-                            Text(command.keycap).dockFont(.metadata)
-                        }
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .dockPadding(.horizontal, 8)
-                        .dockPadding(.vertical, 7)
-                        .contentShape(Rectangle())
-                    }
-                    .buttonStyle(.dockPress)
-                }
-            }
-        }
     }
 }
