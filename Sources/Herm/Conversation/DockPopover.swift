@@ -309,7 +309,9 @@ struct DockPopover: View {
                     openSettings: onOpenSettings,
                     openCommandPalette: { commandPalettePresentation.present() },
                     goBack: goBack,
-                    goForward: goForward
+                    goForward: goForward,
+                    newChat: startNewConversation,
+                    stopGeneration: { model.stop() }
                 )
             )
             .dockSheet(

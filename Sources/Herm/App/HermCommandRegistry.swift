@@ -6,6 +6,8 @@ struct HermCommand: Identifiable {
         case commandPalette
         case back
         case forward
+        case newChat
+        case stopGeneration
     }
 
     enum Scope: Hashable {
@@ -17,6 +19,7 @@ struct HermCommand: Identifiable {
         case file = "File"
         case view = "View"
         case go = "Go"
+        case session = "Session"
 
         var id: String { rawValue }
     }
@@ -35,6 +38,10 @@ struct HermCommand: Identifiable {
         ),
         HermCommand(id: .back, title: "Back", key: "[", modifiers: .command, scope: .workspace, menu: .go),
         HermCommand(id: .forward, title: "Forward", key: "]", modifiers: .command, scope: .workspace, menu: .go),
+        HermCommand(id: .newChat, title: "New chat", key: "n", modifiers: .command, scope: .workspace, menu: .file),
+        HermCommand(
+            id: .stopGeneration, title: "Stop generation", key: ".", modifiers: .command, scope: .workspace,
+            menu: .session),
     ]
 
     var shortcut: KeyboardShortcut? { key.map { KeyboardShortcut($0, modifiers: modifiers) } }
@@ -64,6 +71,8 @@ struct HermCommandHandlers {
     let openCommandPalette: () -> Void
     let goBack: () -> Void
     let goForward: () -> Void
+    let newChat: () -> Void
+    let stopGeneration: () -> Void
 
     func perform(_ command: HermCommand.ID) {
         switch command {
@@ -71,6 +80,8 @@ struct HermCommandHandlers {
         case .commandPalette: openCommandPalette()
         case .back: goBack()
         case .forward: goForward()
+        case .newChat: newChat()
+        case .stopGeneration: stopGeneration()
         }
     }
 }
@@ -114,6 +125,9 @@ struct HermCommandMenus: Commands {
         }
         CommandMenu(HermCommand.Menu.go.rawValue) {
             commandButtons(in: .go)
+        }
+        CommandMenu(HermCommand.Menu.session.rawValue) {
+            commandButtons(in: .session)
         }
     }
 

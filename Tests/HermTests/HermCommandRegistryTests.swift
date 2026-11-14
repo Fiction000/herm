@@ -18,7 +18,7 @@ struct HermCommandRegistryTests {
         #expect(menuIDs.count == commandIDs.count)
         #expect(Set(menuIDs) == Set(commandIDs))
         #expect(paletteIDs == commandIDs)
-        #expect(HermCommand.Menu.allCases.map(\.rawValue) == ["File", "View", "Go"])
+        #expect(HermCommand.Menu.allCases.map(\.rawValue) == ["File", "View", "Go", "Session"])
     }
 
     @Test @MainActor func handlersDispatchEachRegisteredAction() {
@@ -27,7 +27,9 @@ struct HermCommandRegistryTests {
             openSettings: { performed.append(.settings) },
             openCommandPalette: { performed.append(.commandPalette) },
             goBack: { performed.append(.back) },
-            goForward: { performed.append(.forward) }
+            goForward: { performed.append(.forward) },
+            newChat: { performed.append(.newChat) },
+            stopGeneration: { performed.append(.stopGeneration) }
         )
 
         for command in HermCommand.all {
@@ -43,7 +45,9 @@ struct HermCommandRegistryTests {
             openSettings: {},
             openCommandPalette: { presentation.present() },
             goBack: {},
-            goForward: {}
+            goForward: {},
+            newChat: {},
+            stopGeneration: {}
         )
 
         handlers.perform(.commandPalette)
@@ -71,6 +75,6 @@ struct HermCommandRegistryTests {
     }
 
     @Test func paletteLabelsUseTheRegisteredKeyEquivalents() {
-        #expect(HermCommandRegistry.paletteCommands.map(\.keycap) == ["⌘,", "⌘K", "⌘[", "⌘]"])
+        #expect(HermCommandRegistry.paletteCommands.map(\.keycap) == ["⌘,", "⌘K", "⌘[", "⌘]", "⌘N", "⌘."])
     }
 }
