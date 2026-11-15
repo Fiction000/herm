@@ -304,26 +304,26 @@ struct DockPopover: View {
             }
             .onReceive(controlCenter.workspacePresentationChanges) { _ in controlPresentationRevision &+= 1 }
             .environment(\.dockWorkspaceScale, CGFloat(DockWorkspaceScale.supportedTextSize(textSize)))
-            .focusedValue(
-                \.hermCommandHandlers,
-                HermCommandHandlers(
-                    openSettings: onOpenSettings,
-                    openCommandPalette: { commandPalettePresentation.present() },
-                    goBack: goBack,
-                    goForward: goForward,
-                    newChat: startNewConversation,
-                    stopGeneration: { model.stop() },
-                    closeSession: {
-                        if let panel = sessionPanes.activePanel, let sessionID = panel.selectedID {
-                            sessionPanes.closeTab(sessionID, in: panel.id)
-                        } else {
-                            startNewConversation()
-                        }
-                    },
-                    toggleSidebar: { isChatListCollapsed.toggle() },
-                    toggleInspector: toggleInspectorPanel,
-                    showShortcutList: { isShowingShortcutList = true }
-                )
+            .background(
+                HermCommandRegistration(
+                    handlers: HermCommandHandlers(
+                        openSettings: onOpenSettings,
+                        openCommandPalette: { commandPalettePresentation.present() },
+                        goBack: goBack,
+                        goForward: goForward,
+                        newChat: startNewConversation,
+                        stopGeneration: { model.stop() },
+                        closeSession: {
+                            if let panel = sessionPanes.activePanel, let sessionID = panel.selectedID {
+                                sessionPanes.closeTab(sessionID, in: panel.id)
+                            } else {
+                                startNewConversation()
+                            }
+                        },
+                        toggleSidebar: { isChatListCollapsed.toggle() },
+                        toggleInspector: toggleInspectorPanel,
+                        showShortcutList: { isShowingShortcutList = true }
+                    ))
             )
             .dockSheet(
                 isPresented: Binding(

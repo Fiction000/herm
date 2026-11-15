@@ -1,3 +1,4 @@
+import AppKit
 import SwiftUI
 
 struct HermCommand: Identifiable {
@@ -111,14 +112,90 @@ struct HermCommandHandlers {
     }
 }
 
-private struct HermCommandHandlersKey: FocusedValueKey {
-    typealias Value = HermCommandHandlers
+/// Routes menu commands to the workspace in the key window.
+///
+/// Herm hosts its workspace in AppKit windows through `NSHostingView`, so SwiftUI focused
+/// values set inside them never reach the app's `.commands`. Each workspace registers its
+/// handlers for its window instead.
+@MainActor
+final class HermCommandRouter {
+    static let shared = HermCommandRouter()
+
+    private final class Entry {
+        weak var owner: AnyObject?
+        var handlers: HermCommandHandlers
+        init(owner: AnyObject, handlers: HermCommandHandlers) {
+            self.owner = owner
+            self.handlers = handlers
+        }
+    }
+
+    private var entries: [Entry] = []
+    private let keyOwner: () -> AnyObject?
+
+    init(keyOwner: @escaping () -> AnyObject? = { NSApp.keyWindow ?? NSApp.mainWindow }) {
+        self.keyOwner = keyOwner
+    }
+
+    /// Registers or refreshes the handlers for one window. The newest registration is the
+    /// fallback when the key window has none, such as while Settings is in front.
+    func register(_ handlers: HermCommandHandlers, for owner: AnyObject) {
+        entries.removeAll { $0.owner == nil || $0.owner === owner }
+        entries.append(Entry(owner: owner, handlers: handlers))
+    }
+
+    func unregister(_ owner: AnyObject) {
+        entries.removeAll { $0.owner == nil || $0.owner === owner }
+    }
+
+    @discardableResult
+    func perform(_ command: HermCommand.ID) -> Bool {
+        entries.removeAll { $0.owner == nil }
+        let key = keyOwner()
+        guard let entry = entries.last(where: { key != nil && $0.owner === key }) ?? entries.last else {
+            return false
+        }
+        entry.handlers.perform(command)
+        return true
+    }
 }
 
-extension FocusedValues {
-    var hermCommandHandlers: HermCommandHandlers? {
-        get { self[HermCommandHandlersKey.self] }
-        set { self[HermCommandHandlersKey.self] = newValue }
+/// Registers a workspace's command handlers for the window that hosts it.
+struct HermCommandRegistration: NSViewRepresentable {
+    let handlers: HermCommandHandlers
+
+    func makeNSView(context: Context) -> RegistrationView { RegistrationView() }
+
+    func updateNSView(_ view: RegistrationView, context: Context) { view.handlers = handlers }
+
+    static func dismantleNSView(_ view: RegistrationView, coordinator: ()) { view.unregister() }
+
+    final class RegistrationView: NSView {
+        var handlers: HermCommandHandlers? {
+            didSet { register() }
+        }
+        private weak var registeredWindow: NSWindow?
+
+        override func viewDidMoveToWindow() {
+            super.viewDidMoveToWindow()
+            if let registeredWindow, registeredWindow !== window {
+                HermCommandRouter.shared.unregister(registeredWindow)
+            }
+            register()
+        }
+
+        override func hitTest(_ point: NSPoint) -> NSView? { nil }
+
+        func unregister() {
+            if let registeredWindow { HermCommandRouter.shared.unregister(registeredWindow) }
+            registeredWindow = nil
+        }
+
+        private func register() {
+            guard let window, let handlers else { return }
+            HermCommandRouter.shared.register(handlers, for: window)
+            registeredWindow = window
+        }
     }
 }
 
@@ -138,7 +215,6 @@ enum HermCommandRegistry {
 }
 
 struct HermCommandMenus: Commands {
-    @FocusedValue(\.hermCommandHandlers) private var handlers
     let openSettings: () -> Void
 
     var body: some Commands {
@@ -163,7 +239,7 @@ struct HermCommandMenus: Commands {
     private func commandButtons(in menu: HermCommand.Menu) -> some View {
         ForEach(HermCommandRegistry.commands(in: menu)) { command in
             commandButton(command) {
-                if command.id == .settings { openSettings() } else { handlers?.perform(command.id) }
+                if command.id == .settings { openSettings() } else { HermCommandRouter.shared.perform(command.id) }
             }
         }
     }
