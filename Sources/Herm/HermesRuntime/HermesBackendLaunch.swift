@@ -8,17 +8,15 @@ import Foundation
 enum HermesBackendLaunch {
     static let serveCommand = ["/usr/bin/env", "hermes", "serve", "--host", "127.0.0.1", "--port", "0"]
 
+    /// `stop` is trapped before anything starts: a TERM from the watcher (Herm already gone)
+    /// or from `terminate()` during startup must never hit the default action, which would
+    /// kill this shell and orphan the backend's process group.
     static let supervisor = """
         exec 3<&0 </dev/null
-        set -m
-        "$@" 3<&- &
-        backend=$!
-        set +m
-        { while read -r _; do :; done; kill -TERM $$; } <&3 >/dev/null 2>&1 &
-        watcher=$!
-        exec 3<&-
         stop() {
             trap : TERM INT HUP
+            backend=${backend:-$!}
+            [ -n "$backend" ] || exit "${1:-143}"
             kill "$watcher" 2>/dev/null
             kill -TERM -- "-$backend" 2>/dev/null
             { sleep 5; kill -KILL -- "-$backend"; } >/dev/null 2>&1 &
@@ -34,6 +32,13 @@ enum HermesBackendLaunch {
             exit "${1:-143}"
         }
         trap stop TERM INT HUP
+        set -m
+        "$@" 3<&- &
+        backend=$!
+        set +m
+        { while read -r _; do :; done; kill -TERM $$; } <&3 >/dev/null 2>&1 &
+        watcher=$!
+        exec 3<&-
         wait "$backend"
         stop "$?"
         """

@@ -63,6 +63,37 @@ struct HermesBackendLaunchTests {
         #expect(await allExit(tree), "backend processes outlived terminate: \(tree.filter(isAlive))")
     }
 
+    /// Herm can be gone before the supervisor finishes starting, so the watcher sees EOF at once.
+    /// The injected delay widens the startup window that a TERM must not reach before `stop` is trapped.
+    @Test func backendEndsWhenHermIsGoneDuringStartup() async throws {
+        let marker = String(Int.random(in: 100_000_000...999_999_999))
+        let backend = HermesBackendLaunch.process(command: ["/bin/sleep", marker])
+        var arguments = try #require(backend.arguments)
+        let widened = arguments[1].replacingOccurrences(of: "exec 3<&-\n", with: "exec 3<&-\nsleep 0.2\n")
+        try #require(widened != arguments[1], "supervisor no longer closes the lifeline where the test widens startup")
+        arguments[1] = widened
+        backend.arguments = arguments
+        backend.standardOutput = FileHandle.nullDevice
+        try #require(backend.standardInput as? Pipe).fileHandleForWriting.close()
+        try backend.run()
+
+        let orphans = {
+            try ps(["-axo", "pid=,command="]).split(separator: "\n").filter { $0.hasSuffix("/bin/sleep \(marker)") }
+        }
+        defer {
+            for row in (try? orphans()) ?? [] {
+                if let pid = pid_t(row.split(separator: " ")[0]) { kill(pid, SIGKILL) }
+            }
+        }
+        var attempts = 0
+        while try backend.isRunning || !orphans().isEmpty, attempts < 60 {
+            try await Task.sleep(for: .milliseconds(50))
+            attempts += 1
+        }
+        #expect(!backend.isRunning, "supervisor did not exit after Herm's end closed")
+        #expect(try orphans().isEmpty, "backend outlived a supervisor that saw EOF during startup")
+    }
+
     @Test func backendOutputStillReachesHerm() throws {
         let backend = HermesBackendLaunch.process(command: ["/bin/sh", "-c", "echo 'listening on 127.0.0.1:4242'"])
         let output = Pipe()
